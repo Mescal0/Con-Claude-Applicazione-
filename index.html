@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Le Mie Attività</title>
+<style>
+  :root {
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --hairline: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #2a78d6;
+    --accent-ink: #ffffff;
+    --good: #006300;
+    --prio-alta: #d03b3b;
+    --prio-media: #c98500;
+    --prio-bassa: #2a78d6;
+    --danger: #d03b3b;
+    --ghost-hover: rgba(11,11,11,0.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --hairline: #2c2c2a;
+      --border: rgba(255,255,255,0.10);
+      --accent: #3987e5;
+      --accent-ink: #ffffff;
+      --good: #0ca30c;
+      --prio-alta: #e66767;
+      --prio-media: #eda100;
+      --prio-bassa: #3987e5;
+      --danger: #e66767;
+      --ghost-hover: rgba(255,255,255,0.06);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.45;
+  }
+  .app {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 24px 16px 64px;
+  }
+  header h1 {
+    font-size: 1.6rem;
+    margin: 0 0 2px;
+  }
+  header p {
+    margin: 0 0 20px;
+    color: var(--ink-2);
+    font-size: 0.95rem;
+  }
+
+  /* Riepilogo (stat tiles) */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .stat .label {
+    font-size: 0.78rem;
+    color: var(--ink-2);
+  }
+  .stat .value {
+    font-size: 1.5rem;
+    font-weight: 650;
+    color: var(--ink);
+  }
+  .stat.scadute .value.attive { color: var(--danger); }
+  .stat.fatte .value.attive { color: var(--good); }
+
+  /* Modulo aggiunta */
+  form.nuova {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    display: grid;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  form.nuova .riga {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  input[type="text"], input[type="date"], select {
+    font: inherit;
+    color: var(--ink);
+    background: var(--page);
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    padding: 9px 12px;
+  }
+  input[type="text"] { flex: 1 1 100%; }
+  input[type="date"], select { flex: 1 1 140px; min-width: 0; }
+  input:focus-visible, select:focus-visible, button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  button {
+    font: inherit;
+    cursor: pointer;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink);
+    padding: 9px 14px;
+  }
+  button:hover { background: var(--ghost-hover); }
+  button.primario {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 600;
+    flex: 1 1 140px;
+  }
+  button.primario:hover { filter: brightness(1.08); }
+
+  /* Filtri e ordinamento */
+  .controlli {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .filtri { display: flex; gap: 4px; }
+  .filtri button {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    border-color: transparent;
+    background: transparent;
+    color: var(--ink-2);
+  }
+  .filtri button[aria-pressed="true"] {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .controlli select {
+    margin-left: auto;
+    font-size: 0.9rem;
+    padding: 6px 10px;
+    flex: 0 1 auto;
+  }
+
+  /* Elenco attività */
+  ul.elenco { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  li.attivita {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+    align-items: start;
+  }
+  li.attivita.scaduta { border-left: 3px solid var(--danger); }
+  li.attivita.oggi { border-left: 3px solid var(--prio-media); }
+  .spunta {
+    width: 22px; height: 22px;
+    margin-top: 2px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  .corpo { min-width: 0; }
+  .titolo {
+    font-weight: 550;
+    overflow-wrap: anywhere;
+  }
+  li.completata .titolo {
+    text-decoration: line-through;
+    color: var(--muted);
+    font-weight: 450;
+  }
+  .dettagli {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+    font-size: 0.8rem;
+    color: var(--ink-2);
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    padding: 1px 9px;
+    background: var(--page);
+  }
+  .badge .punto {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex: none;
+  }
+  .badge.p-Alta .punto { background: var(--prio-alta); }
+  .badge.p-Media .punto { background: var(--prio-media); }
+  .badge.p-Bassa .punto { background: var(--prio-bassa); }
+  .badge.scad-scaduta { color: var(--danger); border-color: var(--danger); font-weight: 600; }
+  .badge.scad-oggi { font-weight: 600; }
+  .azioni { display: flex; gap: 4px; }
+  .azioni button {
+    padding: 4px 8px;
+    font-size: 0.9rem;
+    border-color: transparent;
+    background: transparent;
+    color: var(--ink-2);
+  }
+  .azioni button:hover { background: var(--ghost-hover); color: var(--ink); }
+  .azioni button.elimina:hover { color: var(--danger); }
+
+  /* Modifica in linea */
+  form.modifica {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  form.modifica input[type="text"] { flex: 1 1 100%; }
+
+  .vuoto {
+    text-align: center;
+    color: var(--muted);
+    padding: 36px 16px;
+    border: 1px dashed var(--hairline);
+    border-radius: 12px;
+  }
+  footer {
+    margin-top: 28px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-align: center;
+  }
+  @media (max-width: 420px) {
+    .stats { grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+    .stat { padding: 10px; }
+    .stat .value { font-size: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>📝 Le Mie Attività</h1>
+    <p>La tua lista di cose da fare. Tutto si salva automaticamente su questo dispositivo.</p>
+  </header>
+
+  <section class="stats" aria-label="Riepilogo">
+    <div class="stat dafare"><div class="label">Da fare</div><div class="value" id="stat-dafare">0</div></div>
+    <div class="stat scadute"><div class="label">Scadute</div><div class="value" id="stat-scadute">0</div></div>
+    <div class="stat fatte"><div class="label">Completate</div><div class="value" id="stat-fatte">0</div></div>
+  </section>
+
+  <form class="nuova" id="form-nuova">
+    <input type="text" id="nuovo-titolo" placeholder="Cosa devi fare? (es. Pagare la bolletta)" maxlength="200" required>
+    <div class="riga">
+      <input type="date" id="nuova-scadenza" aria-label="Scadenza (facoltativa)" title="Scadenza (facoltativa)">
+      <select id="nuova-priorita" aria-label="Priorità">
+        <option value="Media" selected>Priorità: Media</option>
+        <option value="Alta">Priorità: Alta</option>
+        <option value="Bassa">Priorità: Bassa</option>
+      </select>
+      <button type="submit" class="primario">+ Aggiungi</button>
+    </div>
+  </form>
+
+  <div class="controlli">
+    <div class="filtri" role="group" aria-label="Filtra attività">
+      <button type="button" data-filtro="tutte" aria-pressed="true">Tutte</button>
+      <button type="button" data-filtro="dafare" aria-pressed="false">Da fare</button>
+      <button type="button" data-filtro="completate" aria-pressed="false">Completate</button>
+    </div>
+    <select id="ordinamento" aria-label="Ordina per">
+      <option value="creazione">Più recenti</option>
+      <option value="scadenza">Per scadenza</option>
+      <option value="priorita">Per priorità</option>
+    </select>
+  </div>
+
+  <ul class="elenco" id="elenco"></ul>
+  <div class="vuoto" id="vuoto" hidden></div>
+
+  <footer>I dati restano solo su questo dispositivo, dentro il browser che stai usando.</footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var CHIAVE = 'leMieAttivita.v1';
+  var attivita = carica();
+  var filtro = 'tutte';
+  var ordinamento = 'creazione';
+  var inModificaId = null;
+
+  function carica() {
+    try {
+      var dati = JSON.parse(localStorage.getItem(CHIAVE));
+      return Array.isArray(dati) ? dati : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function salva() {
+    try {
+      localStorage.setItem(CHIAVE, JSON.stringify(attivita));
+    } catch (e) {
+      alert('Non sono riuscito a salvare i dati. Controlla lo spazio del browser.');
+    }
+  }
+
+  function oggiISO() {
+    var d = new Date();
+    return d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+  }
+
+  function statoScadenza(t) {
+    if (!t.scadenza || t.fatta) return '';
+    var oggi = oggiISO();
+    if (t.scadenza < oggi) return 'scaduta';
+    if (t.scadenza === oggi) return 'oggi';
+    return 'futura';
+  }
+
+  function formattaData(iso) {
+    var parti = iso.split('-');
+    var d = new Date(Number(parti[0]), Number(parti[1]) - 1, Number(parti[2]));
+    return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  var PESO_PRIORITA = { Alta: 0, Media: 1, Bassa: 2 };
+
+  function elencoVisibile() {
+    var lista = attivita.filter(function (t) {
+      if (filtro === 'dafare') return !t.fatta;
+      if (filtro === 'completate') return t.fatta;
+      return true;
+    });
+    lista.sort(function (a, b) {
+      if (a.fatta !== b.fatta) return a.fatta ? 1 : -1;
+      if (ordinamento === 'scadenza') {
+        var sa = a.scadenza || '9999-12-31';
+        var sb = b.scadenza || '9999-12-31';
+        if (sa !== sb) return sa < sb ? -1 : 1;
+      } else if (ordinamento === 'priorita') {
+        var d = PESO_PRIORITA[a.priorita] - PESO_PRIORITA[b.priorita];
+        if (d !== 0) return d;
+      }
+      return b.creata - a.creata;
+    });
+    return lista;
+  }
+
+  function aggiornaStatistiche() {
+    var daFare = 0, scadute = 0, fatte = 0;
+    attivita.forEach(function (t) {
+      if (t.fatta) { fatte++; return; }
+      daFare++;
+      if (statoScadenza(t) === 'scaduta') scadute++;
+    });
+    impostaStat('stat-dafare', daFare);
+    impostaStat('stat-scadute', scadute);
+    impostaStat('stat-fatte', fatte);
+  }
+
+  function impostaStat(id, valore) {
+    var el = document.getElementById(id);
+    el.textContent = valore;
+    el.classList.toggle('attive', valore > 0);
+  }
+
+  function disegna() {
+    var elenco = document.getElementById('elenco');
+    var vuoto = document.getElementById('vuoto');
+    elenco.textContent = '';
+    var lista = elencoVisibile();
+
+    if (lista.length === 0) {
+      vuoto.hidden = false;
+      vuoto.textContent = attivita.length === 0
+        ? 'Nessuna attività ancora. Scrivi la prima qui sopra e premi “Aggiungi”. ☝️'
+        : (filtro === 'completate'
+            ? 'Non hai ancora completato nessuna attività.'
+            : 'Niente da fare qui: tutto completato! 🎉');
+    } else {
+      vuoto.hidden = true;
+      lista.forEach(function (t) { elenco.appendChild(disegnaVoce(t)); });
+    }
+    aggiornaStatistiche();
+  }
+
+  function disegnaVoce(t) {
+    var li = document.createElement('li');
+    var stato = statoScadenza(t);
+    li.className = 'attivita' + (t.fatta ? ' completata' : '') +
+      (stato === 'scaduta' ? ' scaduta' : '') + (stato === 'oggi' ? ' oggi' : '');
+
+    if (inModificaId === t.id) {
+      li.appendChild(disegnaModifica(t));
+      return li;
+    }
+
+    var spunta = document.createElement('input');
+    spunta.type = 'checkbox';
+    spunta.className = 'spunta';
+    spunta.checked = t.fatta;
+    spunta.setAttribute('aria-label', (t.fatta ? 'Segna da fare: ' : 'Segna completata: ') + t.titolo);
+    spunta.addEventListener('change', function () {
+      t.fatta = spunta.checked;
+      salva();
+      disegna();
+    });
+
+    var corpo = document.createElement('div');
+    corpo.className = 'corpo';
+    var titolo = document.createElement('div');
+    titolo.className = 'titolo';
+    titolo.textContent = t.titolo;
+    corpo.appendChild(titolo);
+
+    var dettagli = document.createElement('div');
+    dettagli.className = 'dettagli';
+
+    var prio = document.createElement('span');
+    prio.className = 'badge p-' + t.priorita;
+    var punto = document.createElement('span');
+    punto.className = 'punto';
+    prio.appendChild(punto);
+    prio.appendChild(document.createTextNode(t.priorita));
+    dettagli.appendChild(prio);
+
+    if (t.scadenza) {
+      var scad = document.createElement('span');
+      scad.className = 'badge' + (stato ? ' scad-' + stato : '');
+      var testo = '📅 ' + formattaData(t.scadenza);
+      if (stato === 'scaduta') testo += ' · Scaduta';
+      if (stato === 'oggi') testo = '📅 Oggi';
+      scad.appendChild(document.createTextNode(testo));
+      dettagli.appendChild(scad);
+    }
+    corpo.appendChild(dettagli);
+
+    var azioni = document.createElement('div');
+    azioni.className = 'azioni';
+    var mod = document.createElement('button');
+    mod.type = 'button';
+    mod.textContent = '✏️';
+    mod.title = 'Modifica';
+    mod.setAttribute('aria-label', 'Modifica: ' + t.titolo);
+    mod.addEventListener('click', function () {
+      inModificaId = t.id;
+      disegna();
+    });
+    var canc = document.createElement('button');
+    canc.type = 'button';
+    canc.className = 'elimina';
+    canc.textContent = '🗑️';
+    canc.title = 'Elimina';
+    canc.setAttribute('aria-label', 'Elimina: ' + t.titolo);
+    canc.addEventListener('click', function () {
+      if (confirm('Eliminare “' + t.titolo + '”?')) {
+        attivita = attivita.filter(function (x) { return x.id !== t.id; });
+        salva();
+        disegna();
+      }
+    });
+    azioni.appendChild(mod);
+    azioni.appendChild(canc);
+
+    li.appendChild(spunta);
+    li.appendChild(corpo);
+    li.appendChild(azioni);
+    return li;
+  }
+
+  function disegnaModifica(t) {
+    var form = document.createElement('form');
+    form.className = 'modifica';
+
+    var titolo = document.createElement('input');
+    titolo.type = 'text';
+    titolo.value = t.titolo;
+    titolo.maxLength = 200;
+    titolo.required = true;
+    titolo.setAttribute('aria-label', 'Titolo attività');
+
+    var scadenza = document.createElement('input');
+    scadenza.type = 'date';
+    scadenza.value = t.scadenza || '';
+    scadenza.setAttribute('aria-label', 'Scadenza');
+
+    var prio = document.createElement('select');
+    prio.setAttribute('aria-label', 'Priorità');
+    ['Alta', 'Media', 'Bassa'].forEach(function (p) {
+      var opt = document.createElement('option');
+      opt.value = p;
+      opt.textContent = 'Priorità: ' + p;
+      opt.selected = t.priorita === p;
+      prio.appendChild(opt);
+    });
+
+    var salvaBtn = document.createElement('button');
+    salvaBtn.type = 'submit';
+    salvaBtn.className = 'primario';
+    salvaBtn.textContent = 'Salva';
+
+    var annulla = document.createElement('button');
+    annulla.type = 'button';
+    annulla.textContent = 'Annulla';
+    annulla.addEventListener('click', function () {
+      inModificaId = null;
+      disegna();
+    });
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var nuovo = titolo.value.trim();
+      if (!nuovo) return;
+      t.titolo = nuovo;
+      t.scadenza = scadenza.value || null;
+      t.priorita = prio.value;
+      inModificaId = null;
+      salva();
+      disegna();
+    });
+
+    form.appendChild(titolo);
+    form.appendChild(scadenza);
+    form.appendChild(prio);
+    form.appendChild(salvaBtn);
+    form.appendChild(annulla);
+    setTimeout(function () { titolo.focus(); }, 0);
+    return form;
+  }
+
+  document.getElementById('form-nuova').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var campoTitolo = document.getElementById('nuovo-titolo');
+    var titolo = campoTitolo.value.trim();
+    if (!titolo) return;
+    attivita.push({
+      id: Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+      titolo: titolo,
+      scadenza: document.getElementById('nuova-scadenza').value || null,
+      priorita: document.getElementById('nuova-priorita').value,
+      fatta: false,
+      creata: Date.now()
+    });
+    campoTitolo.value = '';
+    document.getElementById('nuova-scadenza').value = '';
+    document.getElementById('nuova-priorita').value = 'Media';
+    salva();
+    disegna();
+    campoTitolo.focus();
+  });
+
+  document.querySelectorAll('.filtri button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      filtro = btn.dataset.filtro;
+      document.querySelectorAll('.filtri button').forEach(function (b) {
+        b.setAttribute('aria-pressed', String(b === btn));
+      });
+      disegna();
+    });
+  });
+
+  document.getElementById('ordinamento').addEventListener('change', function (e) {
+    ordinamento = e.target.value;
+    disegna();
+  });
+
+  disegna();
+})();
+</script>
+</body>
+</html>
