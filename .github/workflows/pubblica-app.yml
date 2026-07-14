@@ -2,7 +2,7 @@ name: Pubblica l'app su GitHub Pages
 
 on:
   push:
-    branches: [claude/no-code-app-creation-t4805g]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
