@@ -2,6 +2,17 @@
 
 La tua prima app, creata con Claude — **senza scrivere una riga di codice**.
 
+**🌐 L'app è online qui: https://mescal0.github.io/Con-Claude-Applicazione-/**
+
+## Installala sul telefono (iPhone)
+
+1. Apri il link qui sopra con **Safari**
+2. Tocca il pulsante **Condividi** (il quadrato con la freccia verso l'alto)
+3. Scorri e tocca **"Aggiungi alla schermata Home"**, poi **Aggiungi**
+
+L'icona 📝 compare nella schermata Home: si apre a schermo intero come una vera
+app e funziona anche senza connessione.
+
 È una **lista di cose da fare** (to-do list) in italiano:
 
 - ➕ Aggiungi attività con **scadenza** (facoltativa) e **priorità** (Alta / Media / Bassa)
